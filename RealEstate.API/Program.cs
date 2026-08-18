@@ -53,11 +53,13 @@ builder.Services.AddAutoMapper(config => {}, typeof(MappingProfile).Assembly);
 builder.Services.AddScoped<IAmentiesRepository, AmentiesRepository>();
 builder.Services.AddScoped<IPlansRepository, PlansRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<IFeatureRepository, FeatureRepository>();
 
 // Configure DI for Services
 builder.Services.AddScoped<IAmentiesService, AmentiesService>();
 builder.Services.AddScoped<IPlansService, PlansService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<RealEstate.Application.Interfaces.IService<RealEstate.Domain.Entities.Feature, RealEstate.Application.DTOs.FeatureDto, RealEstate.Application.DTOs.CreateFeatureDto, RealEstate.Application.DTOs.UpdateFeatureDto>, RealEstate.Application.Services.FeatureService>();
 builder.Services.AddScoped<IS3Service, RealEstate.Infrastructure.Services.S3Service>();
 
 var app = builder.Build();
