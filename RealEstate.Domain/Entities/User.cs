@@ -1,9 +1,12 @@
 using System.Collections.Generic;
+using Amazon.DynamoDBv2.DataModel;
 
 namespace RealEstate.Domain.Entities
 {
+    [DynamoDBTable("Users")]
     public class User
     {
+        [DynamoDBHashKey]
         public int Id { get; set; }
         public string Name { get; set; }
         public string Mobile { get; set; }

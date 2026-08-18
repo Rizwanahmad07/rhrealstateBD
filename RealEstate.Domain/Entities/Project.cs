@@ -1,7 +1,11 @@
+using Amazon.DynamoDBv2.DataModel;
+
 namespace RealEstate.Domain.Entities
 {
+    [DynamoDBTable("Projects")]
     public class Project
     {
+        [DynamoDBHashKey]
         public int Id { get; set; }
         public string Name { get; set; }
         public string Logo { get; set; }

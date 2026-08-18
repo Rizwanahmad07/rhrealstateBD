@@ -6,6 +6,8 @@ using RealEstate.Application.Interfaces;
 using RealEstate.Application.Services;
 using RealEstate.Application.Mappings;
 using System.Text.Json.Serialization;
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,9 +32,19 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configure DbContext
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("SqlCon")));
+// Configure DynamoDB
+var awsOptions = builder.Configuration.GetAWSOptions();
+var accessKey = builder.Configuration["AWS:AccessKey"];
+var secretKey = builder.Configuration["AWS:SecretKey"];
+if (!string.IsNullOrEmpty(accessKey) && !string.IsNullOrEmpty(secretKey))
+{
+    awsOptions.Credentials = new Amazon.Runtime.BasicAWSCredentials(accessKey, secretKey);
+}
+builder.Services.AddDefaultAWSOptions(awsOptions);
+builder.Services.AddAWSService<IAmazonDynamoDB>();
+builder.Services.AddAWSService<Amazon.S3.IAmazonS3>();
+builder.Services.AddSingleton<IDynamoDBContext, DynamoDBContext>();
+builder.Services.AddSingleton<IDynamoDbIdGenerator, DynamoDbIdGenerator>();
 
 // Configure AutoMapper
 builder.Services.AddAutoMapper(config => {}, typeof(MappingProfile).Assembly);
@@ -46,6 +58,7 @@ builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<IAmentiesService, AmentiesService>();
 builder.Services.AddScoped<IPlansService, PlansService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IS3Service, RealEstate.Infrastructure.Services.S3Service>();
 
 var app = builder.Build();
 

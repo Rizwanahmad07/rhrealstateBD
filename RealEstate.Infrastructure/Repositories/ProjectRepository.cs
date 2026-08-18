@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+using Amazon.DynamoDBv2.DataModel;
 using RealEstate.Domain.Entities;
 using RealEstate.Domain.Interfaces;
 using RealEstate.Infrastructure.Data;
@@ -9,41 +9,46 @@ namespace RealEstate.Infrastructure.Repositories
 {
     public class ProjectRepository : IProjectRepository
     {
-        protected readonly ApplicationDbContext _context;
+        protected readonly IDynamoDBContext _dynamoDbContext;
+        protected readonly IDynamoDbIdGenerator _idGenerator;
 
-        public ProjectRepository(ApplicationDbContext context)
+        public ProjectRepository(IDynamoDBContext dynamoDbContext, IDynamoDbIdGenerator idGenerator)
         {
-            _context = context;
+            _dynamoDbContext = dynamoDbContext;
+            _idGenerator = idGenerator;
         }
 
         public async Task<Project> GetByIdAsync(int id)
         {
-            return await _context.Projects.FindAsync(id);
+            return await _dynamoDbContext.LoadAsync<Project>(id);
         }
 
         public async Task<IEnumerable<Project>> GetAllAsync()
         {
-            return await _context.Projects.ToListAsync();
+            return await _dynamoDbContext.ScanAsync<Project>(new List<ScanCondition>()).GetRemainingAsync();
         }
 
         public async Task AddAsync(Project entity)
         {
-            await _context.Projects.AddAsync(entity);
+            entity.Id = await _idGenerator.GetNextIdAsync("Projects");
+            await _dynamoDbContext.SaveAsync(entity);
         }
 
         public void Update(Project entity)
         {
-            _context.Entry(entity).State = EntityState.Modified;
+            // We'll save it immediately since DynamoDB doesn't track changes
+            _dynamoDbContext.SaveAsync(entity).Wait();
         }
 
         public void Delete(Project entity)
         {
-            _context.Projects.Remove(entity);
+            _dynamoDbContext.DeleteAsync(entity).Wait();
         }
 
         public async Task SaveChangesAsync()
         {
-            await _context.SaveChangesAsync();
+            // DynamoDB operations are executed immediately, so this is a no-op
+            await Task.CompletedTask;
         }
     }
 }

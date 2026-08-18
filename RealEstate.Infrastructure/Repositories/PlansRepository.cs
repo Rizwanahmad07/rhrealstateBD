@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+using Amazon.DynamoDBv2.DataModel;
 using RealEstate.Domain.Entities;
 using RealEstate.Domain.Interfaces;
 using RealEstate.Infrastructure.Data;
@@ -9,41 +9,44 @@ namespace RealEstate.Infrastructure.Repositories
 {
     public class PlansRepository : IPlansRepository
     {
-        protected readonly ApplicationDbContext _context;
+        protected readonly IDynamoDBContext _dynamoDbContext;
+        protected readonly IDynamoDbIdGenerator _idGenerator;
 
-        public PlansRepository(ApplicationDbContext context)
+        public PlansRepository(IDynamoDBContext dynamoDbContext, IDynamoDbIdGenerator idGenerator)
         {
-            _context = context;
+            _dynamoDbContext = dynamoDbContext;
+            _idGenerator = idGenerator;
         }
 
         public async Task<Plans> GetByIdAsync(int id)
         {
-            return await _context.Plans.FindAsync(id);
+            return await _dynamoDbContext.LoadAsync<Plans>(id);
         }
 
         public async Task<IEnumerable<Plans>> GetAllAsync()
         {
-            return await _context.Plans.ToListAsync();
+            return await _dynamoDbContext.ScanAsync<Plans>(new List<ScanCondition>()).GetRemainingAsync();
         }
 
         public async Task AddAsync(Plans entity)
         {
-            await _context.Plans.AddAsync(entity);
+            entity.Id = await _idGenerator.GetNextIdAsync("Plans");
+            await _dynamoDbContext.SaveAsync(entity);
         }
 
         public void Update(Plans entity)
         {
-            _context.Entry(entity).State = EntityState.Modified;
+            _dynamoDbContext.SaveAsync(entity).Wait();
         }
 
         public void Delete(Plans entity)
         {
-            _context.Plans.Remove(entity);
+            _dynamoDbContext.DeleteAsync(entity).Wait();
         }
 
         public async Task SaveChangesAsync()
         {
-            await _context.SaveChangesAsync();
+            await Task.CompletedTask;
         }
     }
 }

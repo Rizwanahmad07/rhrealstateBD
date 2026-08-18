@@ -12,11 +12,13 @@ namespace RealEstate.Application.Services
     {
         private readonly IProjectRepository _repository;
         private readonly IMapper _mapper;
+        private readonly IS3Service _s3Service;
 
-        public ProjectService(IProjectRepository repository, IMapper mapper)
+        public ProjectService(IProjectRepository repository, IMapper mapper, IS3Service s3Service)
         {
             _repository = repository;
             _mapper = mapper;
+            _s3Service = s3Service;
         }
 
         public async Task<IEnumerable<ProjectDto>> GetAllAsync()
@@ -33,6 +35,10 @@ namespace RealEstate.Application.Services
 
         public async Task<ProjectDto> CreateAsync(CreateProjectDto createDto)
         {
+            createDto.Logo = await _s3Service.UploadBase64ImageAsync(createDto.Logo);
+            createDto.BannerImage = await _s3Service.UploadBase64ImageAsync(createDto.BannerImage);
+            createDto.OverviewImage = await _s3Service.UploadBase64ImageAsync(createDto.OverviewImage);
+
             var entity = _mapper.Map<Project>(createDto);
             await _repository.AddAsync(entity);
             await _repository.SaveChangesAsync();
@@ -43,6 +49,10 @@ namespace RealEstate.Application.Services
         {
             var entity = await _repository.GetByIdAsync(id);
             if (entity == null) return;
+
+            updateDto.Logo = await _s3Service.UploadBase64ImageAsync(updateDto.Logo);
+            updateDto.BannerImage = await _s3Service.UploadBase64ImageAsync(updateDto.BannerImage);
+            updateDto.OverviewImage = await _s3Service.UploadBase64ImageAsync(updateDto.OverviewImage);
 
             _mapper.Map(updateDto, entity);
             _repository.Update(entity);
